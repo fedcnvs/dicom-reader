@@ -1,1 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DICOM Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090b;
+    --surface: #18181b;
+    --surface2: #27272a;
+    --border: #3f3f46;
+    --border-subtle: #27272a;
+    --text: #fafafa;
+    --text-muted: #a1a1aa;
+    --text-dim: #71717a;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --accent-glow: rgba(59,130,246,.25);
+    --green: #22c55e;
+    --yellow: #eab308;
+    --cyan: #06b6d4;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --transition: .18s cubic-bezier(.4,0,.2,1);
+  }
 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Toolbar ── */
+  #topbar {
+    background: rgba(24,24,27,.85);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    z-index: 20;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .logo svg { flex-shrink: 0; }
+  .logo span {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .sep {
+    width: 1px;
+    height: 26px;
+    background: var(--border-subtle);
+    flex-shrink: 0;
+  }
+
+  /* Primary action buttons */
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all var(--transition);
+    box-shadow: 0 0 0 0 var(--accent-glow);
+  }
+  .action-btn:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 0 16px 2px var(--accent-glow);
+    transform: translateY(-1px);
+  }
+  .action-btn:active { transform: translateY(0); }
+  .action-btn svg { width: 14px; height: 14px; }
+
+  /* Thumbnail strip */
+  #thumbStrip {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    overflow-x: auto;
+    flex: 1;
+    min-width: 0;
+    padding: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #thumbStrip::-webkit-scrollbar { height: 4px; }
+  #thumbStrip::-webkit-scrollbar-track { background: transparent; }
+  #thumbStrip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .thumb-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 3px;
+  }
+  .thumb {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--surface);
+    transition: all var(--transition);
+  }
+  .thumb:hover { border-color: var(--text-dim); transform: scale(1.06); }
+  .thumb.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+  .thumb-label {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--text-dim);
+    letter-spacing: .02em;
+  }
+
+  /* Tool button group */
+  .tool-group {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    border: 1px solid var(--border-subtle);
+  }
+  .tbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all var(--transition);
+  }
+  .tbtn svg { width: 14px; height: 14px; opacity: .7; transition: opacity var(--transition); }
+  .tbtn:hover { background: var(--surface2); color: var(--text); }
+  .tbtn:hover svg { opacity: 1; }
+  .tbtn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 6px var(--accent-glow);
+  }
+  .tbtn.active svg { opacity: 1; }
+
+  /* Info bar */
+  #infobar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 5px 16px;
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  #infobar .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-muted);
+  }
+  #infobar .tag b {
+    font-weight: 600;
+    color: var(--text);
+  }
+  #infobar .tag svg { width: 12px; height: 12px; opacity: .5; }
+
+  /* ── Main layout ── */
+  #main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  /* Canvas */
+  #canvasWrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    cursor: crosshair;
+    min-width: 0;
+  }
+  #mainCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: 0 0;
+    image-rendering: pixelated;
+  }
+
+  /* HUD overlays */
+  .hud-tag {
+    position: absolute;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    pointer-events: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(6px);
+  }
+  #hudWL { bottom: 10px; left: 10px; color: var(--yellow); }
+  #hudZoom { bottom: 10px; right: 10px; color: var(--cyan); }
+  #hud { top: 10px; right: 10px; color: var(--green); text-align: right; line-height: 1.6; }
+
+  /* Side panel */
+  #sidePanel {
+    width: 320px;
+    background: var(--surface);
+    border-left: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: width .25s cubic-bezier(.4,0,.2,1);
+  }
+  #sidePanel.collapsed { width: 0; border: none; }
+  #sidePanel .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(24,24,27,.6);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -.01em;
+  }
+  #sidePanel .panel-header svg { width: 16px; height: 16px; color: var(--accent); }
+  #reportBox {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* Drop overlay */
+  #dropOverlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    inset: 0;
+    background: rgba(9,9,11,.92);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+    pointer-events: none;
+    transition: opacity .3s;
+  }
+  #dropOverlay.hidden { display: none; }
+  .drop-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 48px 56px;
+    border: 2px dashed var(--border);
+    border-radius: 20px;
+    background: rgba(39,39,42,.3);
+    transition: border-color .3s, background .3s;
+  }
+  #dropOverlay:not(.hidden) .drop-card {
+    animation: dropPulse 2s ease-in-out infinite;
+  }
+  @keyframes dropPulse {
+    0%, 100% { border-color: var(--border); background: rgba(39,39,42,.3); }
+    50% { border-color: var(--accent); background: rgba(59,130,246,.06); }
+  }
+  .drop-card svg { width: 48px; height: 48px; color: var(--accent); opacity: .8; }
+  .drop-card h3 { font-size: 18px; font-weight: 600; color: var(--text); }
+  .drop-card p { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+  .drop-card p strong { color: var(--accent); font-weight: 600; }
+  .drop-card small { font-size: 11px; color: var(--text-dim); }
+
+  /* Histogram */
+  #histWrap {
+    position: absolute;
+    bottom: 38px;
+    left: 10px;
+    width: 160px;
+    height: 56px;
+    opacity: .6;
+    pointer-events: none;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  #histCanvas { width: 100%; height: 100%; }
+
+  /* Loading */
+  #loadingMsg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(9,9,11,.75);
+    backdrop-filter: blur(8px);
+    z-index: 15;
+    transition: opacity .3s;
+  }
+  #loadingMsg.hidden { display: none; }
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loadingText {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  /* Tooltip */
+  .tbtn[title] { position: relative; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--accent)">
+      <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 6v6l4 2"/>
+      <circle cx="12" cy="12" r="3" fill="var(--accent)" stroke="none" opacity=".3"/>
+    </svg>
+    <span>DICOM Viewer</span>
+  </div>
+
+  <button class="action-btn" onclick="document.getElementById('fileInput').click()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    Files
+  </button>
+  <input type="file" id="fileInput" multiple accept=".dcm,.dicom,*" style="display:none">
+
+  <button class="action-btn" onclick="scanFolder()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    Scan CD
+  </button>
+  <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none">
+
+  <div class="sep"></div>
+  <div id="thumbStrip"></div>
+  <div class="sep"></div>
+
+  <div class="tool-group">
+    <button class="tbtn active" id="toolWL" title="Window/Level">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+      W/L
+    </button>
+    <button class="tbtn" id="toolZoom" title="Zoom">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      Zoom
+    </button>
+    <button class="tbtn" id="toolPan" title="Pan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+      Pan
+    </button>
+  </div>
+
+  <div class="tool-group">
+    <button class="tbtn" onclick="resetView()" title="Fit to window">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      Fit
+    </button>
+    <button class="tbtn" onclick="invertLUT()" title="Invert">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor" opacity=".4"/></svg>
+      Inv
+    </button>
+    <button class="tbtn" onclick="rotate90()" title="Rotate 90">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    </button>
+    <button class="tbtn" onclick="flipH()" title="Flip H">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 5h18"/><polyline points="7 23 3 19 7 15"/><path d="M21 19H3"/></svg>
+    </button>
+  </div>
+
+  <div class="tool-group">
+    <button class="tbtn" onclick="toggleReport()" id="reportBtn" title="Report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Report
+    </button>
+  </div>
+
+  <div class="tool-group">
+    <button class="tbtn" onclick="exportPNG()" title="Export PNG">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      PNG
+    </button>
+    <button class="tbtn" onclick="exportPDF()" title="Export PDF">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      PDF
+    </button>
+  </div>
+</div>
+
+<!-- INFO BAR -->
+<div id="infobar">
+  <span class="tag">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <b id="iPatient">-</b>
+  </span>
+  <span class="tag">Modality <b id="iModality">-</b></span>
+  <span class="tag">Body <b id="iBody">-</b></span>
+  <span class="tag">Date <b id="iDate">-</b></span>
+  <span class="tag">Size <b id="iSize">-</b></span>
+  <span class="tag">Bits <b id="iBits">-</b></span>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="canvasWrap">
+    <div id="dropOverlay">
+      <div class="drop-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <h3>Open DICOM Scans</h3>
+        <p>Drop files or a <strong>CDROM folder</strong> here<br>or use the toolbar buttons above</p>
+        <small>Auto-scans subfolders &middot; DX &middot; CT &middot; MR &middot; CR</small>
+      </div>
+    </div>
+
+    <canvas id="mainCanvas"></canvas>
+
+    <div id="hud" class="hud-tag"></div>
+    <div id="hudWL" class="hud-tag"></div>
+    <div id="hudZoom" class="hud-tag"></div>
+
+    <div id="histWrap"><canvas id="histCanvas" width="160" height="56"></canvas></div>
+
+    <div id="loadingMsg" class="hidden">
+      <div class="spinner"></div>
+      <div id="loadingText">Parsing DICOM...</div>
+    </div>
+  </div>
+
+  <div id="sidePanel">
+    <div class="panel-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Radiology Report
+    </div>
+    <div id="reportBox">No report loaded.</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// DICOM Parser (Explicit Little Endian + Implicit)
+// ─────────────────────────────────────────────
+const VR_SIZES = {OB:0,OW:0,SQ:0,UC:0,UR:0,UT:0,UN:0,OD:0,OF:0,OL:0,OV:0,SV:0,UV:0};
+
+function parseDicom(buffer) {
+  const view = new DataView(buffer);
+  const u8 = new Uint8Array(buffer);
+
+  if (buffer.byteLength < 136 ||
+      u8[128] !== 0x44 || u8[129] !== 0x49 || u8[130] !== 0x43 || u8[131] !== 0x4D) {
+    throw new Error('Not a valid DICOM file');
+  }
+
+  let offset = 132;
+  const tags = {};
+
+  function readTag() {
+    if (offset + 4 > buffer.byteLength) return null;
+    const g = view.getUint16(offset, true);
+    const e = view.getUint16(offset + 2, true);
+    offset += 4;
+    return (g << 16) | e;
+  }
+
+  function readVR() {
+    const vr = String.fromCharCode(u8[offset], u8[offset+1]);
+    offset += 2;
+    return vr;
+  }
+
+  function readLength(vr, explicit) {
+    if (!explicit) {
+      const l = view.getUint32(offset, true); offset += 4; return l;
+    }
+    if (vr in VR_SIZES) {
+      offset += 2;
+      const l = view.getUint32(offset, true); offset += 4; return l;
+    }
+    const l = view.getUint16(offset, true); offset += 2; return l;
+  }
+
+  const firstVR = String.fromCharCode(u8[132+4], u8[132+5]);
+  const explicit = /^[A-Z]{2}$/.test(firstVR);
+
+  while (offset < buffer.byteLength - 4) {
+    const tag = readTag();
+    if (tag === null) break;
+
+    let vr, length;
+    if (explicit) {
+      vr = readVR();
+      length = readLength(vr, true);
+    } else {
+      vr = null;
+      length = view.getUint32(offset, true); offset += 4;
+    }
+
+    if (length === 0xFFFFFFFF) {
+      const startOff = offset;
+      while (offset < buffer.byteLength - 8) {
+        if (view.getUint32(offset, true) === 0xE0DDFFFE && view.getUint32(offset+4, true) === 0) {
+          offset += 8; break;
+        }
+        offset++;
+      }
+      tags[tag] = { vr, offset: startOff, length: offset - 8 - startOff };
+      continue;
+    }
+
+    tags[tag] = { vr, offset, length, data: buffer.slice(offset, offset + length) };
+    offset += length;
+  }
+  return { tags, buffer, explicit };
+}
+
+function getString(dicom, tag, def='') {
+  const t = dicom.tags[tag];
+  if (!t || !t.data) return def;
+  return new TextDecoder('latin1').decode(t.data).replace(/\0/g, '').trim();
+}
+
+function getUint16(dicom, tag) {
+  const t = dicom.tags[tag];
+  if (!t || !t.data) return null;
+  return new DataView(t.data).getUint16(0, true);
+}
+
+function getUint32(dicom, tag) {
+  const t = dicom.tags[tag];
+  if (!t || !t.data) return null;
+  return new DataView(t.data).getUint32(0, true);
+}
+
+const TAG = {
+  PatientName:0x00100010, PatientID:0x00100020, StudyDate:0x00080020,
+  Modality:0x00080060, BodyPart:0x00180015, Rows:0x00280010,
+  Columns:0x00280011, BitsAllocated:0x00280100, BitsStored:0x00280101,
+  HighBit:0x00280102, PixelRepresentation:0x00280103, SamplesPerPixel:0x00280002,
+  PhotometricInterp:0x00280004, WindowCenter:0x00281050, WindowWidth:0x00281051,
+  RescaleIntercept:0x00281052, RescaleSlope:0x00281053, PixelData:0x7FE00010,
+  SOPClassUID:0x00080016, TransferSyntaxUID:0x00020010, ContentSequence:0x0040A730,
+  TextValue:0x0040A160,
+};
+
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+let files = [];
+let currentIdx = -1;
+let wCenter = 2048, wWidth = 4096;
+let zoom = 1, panX = 0, panY = 0;
+let rotation = 0, flipped = false;
+let tool = 'wl';
+let invertFlag = false;
+let dragging = false, dragStartX = 0, dragStartY = 0;
+let dragStartWC = 0, dragStartWW = 0;
+let dragStartZoom = 1, dragStartPanX = 0, dragStartPanY = 0;
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+const histCanvas = document.getElementById('histCanvas');
+const histCtx = histCanvas.getContext('2d');
+
+// ─────────────────────────────────────────────
+// File loading
+// ─────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', e => {
+  loadFileList([...e.target.files]);
+});
+
+document.getElementById('folderInput').addEventListener('change', e => {
+  loadFileList([...e.target.files]);
+});
+
+async function scanFolder() {
+  if (window.showDirectoryPicker) {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+      showLoading(true);
+      const allFiles = [];
+      await scanDirHandle(dirHandle, allFiles);
+      showLoading(false);
+      if (allFiles.length) loadFileList(allFiles);
+      else alert('No DICOM files found in this folder.');
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  document.getElementById('folderInput').click();
+}
+
+async function scanDirHandle(dirHandle, results) {
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind === 'file') {
+      const file = await entry.getFile();
+      if (isDicomCandidate(file.name)) results.push(file);
+    } else if (entry.kind === 'directory') {
+      await scanDirHandle(entry, results);
+    }
+  }
+}
+
+function isDicomCandidate(name) {
+  if (/\.(dcm|dicom|ima)$/i.test(name)) return true;
+  if (!name.includes('.')) return true;
+  if (name.toUpperCase() === 'DICOMDIR') return true;
+  return false;
+}
+
+const dropOverlay = document.getElementById('dropOverlay');
+const canvasWrap = document.getElementById('canvasWrap');
+
+let dragCounter = 0;
+document.body.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; dropOverlay.classList.remove('hidden'); });
+document.body.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+document.body.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.add('hidden'); } });
+document.body.addEventListener('drop', async e => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.add('hidden');
+
+  const items = [...(e.dataTransfer.items || [])];
+  const entries = items.map(i => i.webkitGetAsEntry ? i.webkitGetAsEntry() : null).filter(Boolean);
+  const hasDir = entries.some(e => e.isDirectory);
+
+  if (hasDir) {
+    showLoading(true);
+    const allFiles = await collectFilesFromEntries(entries);
+    showLoading(false);
+    if (allFiles.length) loadFileList(allFiles);
+    else alert('No DICOM files found in the dropped folder.');
+  } else if (e.dataTransfer.files.length) {
+    loadFileList([...e.dataTransfer.files]);
+  }
+});
+
+async function collectFilesFromEntries(entries) {
+  const results = [];
+  for (const entry of entries) {
+    await walkEntry(entry, results);
+  }
+  return results;
+}
+
+function walkEntry(entry, results) {
+  return new Promise(resolve => {
+    if (entry.isFile) {
+      entry.file(f => {
+        if (isDicomCandidate(f.name)) results.push(f);
+        resolve();
+      }, resolve);
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const readAll = [];
+      const readBatch = () => {
+        reader.readEntries(async entries => {
+          if (!entries.length) { await Promise.all(readAll); resolve(); return; }
+          for (const e of entries) readAll.push(walkEntry(e, results));
+          readBatch();
+        }, resolve);
+      };
+      readBatch();
+    } else { resolve(); }
+  });
+}
+
+function loadFileList(fileArr) {
+  const dicoms = fileArr.filter(f => isDicomCandidate(f.name));
+  if (!dicoms.length) { alert('No DICOM files found.'); return; }
+
+  showLoading(true);
+  let loaded = 0;
+
+  dicoms.forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const dicom = parseDicom(e.target.result);
+        const entry = processFile(file.name, dicom);
+        if (entry) files.push(entry);
+      } catch(err) {
+        console.warn('Failed to parse', file.name, err);
+      }
+      loaded++;
+      showLoading(true, `Parsing DICOM... ${loaded}/${dicoms.length}`);
+      if (loaded === dicoms.length) {
+        showLoading(false);
+        files.sort((a,b) => a.name.localeCompare(b.name));
+        buildThumbs();
+        dropOverlay.classList.add('hidden');
+        if (files.length) showImage(0);
+        else alert('No valid DICOM images found.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function processFile(name, dicom) {
+  const rows = getUint16(dicom, TAG.Rows);
+  const cols = getUint16(dicom, TAG.Columns);
+  const bitsAlloc = getUint16(dicom, TAG.BitsAllocated) || 16;
+  const bitsStored = getUint16(dicom, TAG.BitsStored) || bitsAlloc;
+  const pixRep = getUint16(dicom, TAG.PixelRepresentation) || 0;
+  const photometric = getString(dicom, TAG.PhotometricInterp, 'MONOCHROME2');
+  const modality = getString(dicom, TAG.Modality);
+
+  if (modality === 'SR' || !rows) {
+    const text = extractReportText(dicom);
+    if (text) document.getElementById('reportBox').textContent = text;
+    return null;
+  }
+
+  const pixTag = dicom.tags[TAG.PixelData];
+  if (!pixTag) return null;
+
+  let px;
+  if (bitsAlloc === 8) {
+    const raw = new Uint8Array(dicom.buffer, pixTag.offset, rows * cols);
+    px = new Uint16Array(rows * cols);
+    for (let i = 0; i < raw.length; i++) px[i] = raw[i];
+  } else {
+    px = new Uint16Array(dicom.buffer, pixTag.offset, rows * cols);
+  }
+
+  const slope = parseFloat(getString(dicom, TAG.RescaleSlope)) || 1;
+  const intercept = parseFloat(getString(dicom, TAG.RescaleIntercept)) || 0;
+
+  let wc = parseFloat(getString(dicom, TAG.WindowCenter).split('\\')[0]) || null;
+  let ww = parseFloat(getString(dicom, TAG.WindowWidth).split('\\')[0]) || null;
+
+  if (!wc || !ww) {
+    let min = Infinity, max = -Infinity;
+    for (let i = 0; i < px.length; i++) {
+      const v = px[i]; if (v < min) min = v; if (v > max) max = v;
+    }
+    wc = (min + max) / 2;
+    ww = max - min;
+  }
+
+  const thumbCanvas = document.createElement('canvas');
+  thumbCanvas.width = 48; thumbCanvas.height = 48;
+  renderThumb(thumbCanvas, px, rows, cols, wc, ww, photometric);
+
+  return { name, dicom, pixels16: px, rows, cols, bitsStored, pixRep, photometric, slope, intercept, wc, ww, thumbCanvas };
+}
+
+// ─────────────────────────────────────────────
+// Structured Report text extraction
+// ─────────────────────────────────────────────
+function extractReportText(dicom) {
+  const buf = dicom.buffer;
+  const u8 = new Uint8Array(buf);
+  const lines = [];
+  let i = 0;
+  while (i < buf.byteLength - 10) {
+    if (u8[i]===0x40 && u8[i+1]===0x00 && u8[i+2]===0x60 && u8[i+3]===0xA1) {
+      let len, textOff;
+      const vr = String.fromCharCode(u8[i+4], u8[i+5]);
+      if (vr === 'UT' || vr === 'ST' || vr === 'LT') {
+        len = new DataView(buf, i+8, 4).getUint32(0, true);
+        textOff = i + 12;
+      } else {
+        len = new DataView(buf, i+4, 4).getUint32(0, true);
+        textOff = i + 8;
+      }
+      if (len > 0 && len < 100000 && textOff + len <= buf.byteLength) {
+        const txt = new TextDecoder('utf-8').decode(new Uint8Array(buf, textOff, len)).trim();
+        if (txt.length > 3) lines.push(txt);
+      }
+    }
+    i++;
+  }
+  return lines.join('\n\n') || null;
+}
+
+// ─────────────────────────────────────────────
+// Thumbnails
+// ─────────────────────────────────────────────
+function buildThumbs() {
+  const strip = document.getElementById('thumbStrip');
+  strip.innerHTML = '';
+  files.forEach((f, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb-wrap';
+    const img = f.thumbCanvas;
+    img.className = 'thumb' + (i === currentIdx ? ' active' : '');
+    img.title = f.name;
+    img.onclick = () => showImage(i);
+    const lbl = document.createElement('div');
+    lbl.className = 'thumb-label';
+    lbl.textContent = `${i+1}/${files.length}`;
+    wrap.appendChild(img);
+    wrap.appendChild(lbl);
+    strip.appendChild(wrap);
+  });
+}
+
+function renderThumb(thumbCanvas, px, rows, cols, wc, ww, photometric) {
+  const tc = thumbCanvas.getContext('2d');
+  const size = 48;
+  const scale = Math.min(size/cols, size/rows);
+  const tw = Math.round(cols * scale);
+  const th = Math.round(rows * scale);
+  const offCanvas = new OffscreenCanvas(cols, rows);
+  const offCtx = offCanvas.getContext('2d');
+  const imgData = offCtx.createImageData(cols, rows);
+  applyWindowLevel(px, imgData.data, wc, ww, photometric, false);
+  offCtx.putImageData(imgData, 0, 0);
+  tc.drawImage(offCanvas, 0, 0, cols, rows, (size-tw)/2, (size-th)/2, tw, th);
+}
+
+// ─────────────────────────────────────────────
+// Show Image
+// ─────────────────────────────────────────────
+function showImage(idx) {
+  currentIdx = idx;
+  const f = files[idx];
+
+  document.querySelectorAll('.thumb').forEach((t,i) => {
+    t.classList.toggle('active', i === idx);
+  });
+
+  wCenter = f.wc;
+  wWidth = f.ww;
+  rotation = 0;
+  flipped = false;
+  invertFlag = false;
+
+  document.getElementById('iPatient').textContent = getString(f.dicom, TAG.PatientName).replace(/\^/g,' ') || '-';
+  document.getElementById('iModality').textContent = getString(f.dicom, TAG.Modality) || '-';
+  document.getElementById('iBody').textContent = getString(f.dicom, TAG.BodyPart) || '-';
+  const dt = getString(f.dicom, TAG.StudyDate);
+  document.getElementById('iDate').textContent = dt ? `${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}` : '-';
+  document.getElementById('iSize').textContent = `${f.cols} x ${f.rows}`;
+  document.getElementById('iBits').textContent = f.bitsStored + '-bit';
+
+  resetView();
+  drawHistogram(f.pixels16);
+}
+
+// ─────────────────────────────────────────────
+// Rendering
+// ─────────────────────────────────────────────
+function applyWindowLevel(px16, rgba, wc, ww, photometric, inv) {
+  const half = ww / 2;
+  const lo = wc - half, hi = wc + half;
+  const invert = (photometric === 'MONOCHROME1') !== inv;
+
+  for (let i = 0, n = px16.length; i < n; i++) {
+    let val = px16[i];
+    let gray;
+    if (val <= lo) gray = 0;
+    else if (val >= hi) gray = 255;
+    else gray = Math.round(((val - lo) / ww) * 255);
+    if (invert) gray = 255 - gray;
+    const p = i * 4;
+    rgba[p] = rgba[p+1] = rgba[p+2] = gray;
+    rgba[p+3] = 255;
+  }
+}
+
+let offscreen = null;
+
+function render() {
+  if (currentIdx < 0) return;
+  const f = files[currentIdx];
+  const { pixels16, rows, cols, photometric } = f;
+
+  if (!offscreen || offscreen.width !== cols || offscreen.height !== rows) {
+    offscreen = new OffscreenCanvas(cols, rows);
+  }
+  const offCtx = offscreen.getContext('2d');
+  const imgData = offCtx.createImageData(cols, rows);
+  applyWindowLevel(pixels16, imgData.data, wCenter, wWidth, photometric, invertFlag);
+  offCtx.putImageData(imgData, 0, 0);
+
+  const wrap = document.getElementById('canvasWrap');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  canvas.width = W; canvas.height = H;
+
+  ctx.save();
+  ctx.translate(W/2, H/2);
+  ctx.rotate(rotation * Math.PI / 180);
+  if (flipped) ctx.scale(-1, 1);
+  ctx.translate(panX, panY);
+  ctx.scale(zoom, zoom);
+  ctx.drawImage(offscreen, -cols/2, -rows/2);
+  ctx.restore();
+
+  document.getElementById('hudWL').textContent = `WC ${Math.round(wCenter)}  WW ${Math.round(wWidth)}`;
+  document.getElementById('hudZoom').textContent = `${(zoom*100).toFixed(0)}%`;
+}
+
+// ─────────────────────────────────────────────
+// View controls
+// ─────────────────────────────────────────────
+function resetView() {
+  if (currentIdx < 0) return;
+  const f = files[currentIdx];
+  const wrap = document.getElementById('canvasWrap');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  zoom = Math.min(W / f.cols, H / f.rows) * 0.95;
+  panX = 0; panY = 0;
+  render();
+}
+
+function invertLUT() { invertFlag = !invertFlag; render(); }
+function rotate90() { rotation = (rotation + 90) % 360; render(); }
+function flipH() { flipped = !flipped; render(); }
+
+// ─────────────────────────────────────────────
+// Mouse interaction
+// ─────────────────────────────────────────────
+const wrap = document.getElementById('canvasWrap');
+
+wrap.addEventListener('mousedown', e => {
+  if (currentIdx < 0) return;
+  dragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  dragStartWC = wCenter; dragStartWW = wWidth;
+  dragStartZoom = zoom; dragStartPanX = panX; dragStartPanY = panY;
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', e => {
+  if (!dragging || currentIdx < 0) return;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+
+  if (tool === 'wl') {
+    wCenter = dragStartWC + dx * 3;
+    wWidth  = Math.max(1, dragStartWW + dy * 3);
+  } else if (tool === 'zoom') {
+    zoom = Math.max(0.05, dragStartZoom * Math.pow(1.01, -dy));
+  } else if (tool === 'pan') {
+    panX = dragStartPanX + dx;
+    panY = dragStartPanY + dy;
+  }
+  render();
+});
+
+window.addEventListener('mouseup', () => { dragging = false; });
+
+wrap.addEventListener('wheel', e => {
+  if (currentIdx < 0) return;
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  zoom = Math.max(0.05, zoom * factor);
+  render();
+}, { passive: false });
+
+['WL','Zoom','Pan'].forEach(t => {
+  document.getElementById('tool' + t).addEventListener('click', () => {
+    tool = t.toLowerCase();
+    document.querySelectorAll('.tool-group .tbtn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tool' + t).classList.add('active');
+  });
+});
+
+// ─────────────────────────────────────────────
+// Histogram
+// ─────────────────────────────────────────────
+function drawHistogram(px16) {
+  const bins = 256;
+  const hist = new Uint32Array(bins);
+  for (let i = 0; i < px16.length; i++) {
+    const v = Math.min(bins - 1, Math.round(px16[i] / 65535 * (bins - 1)));
+    hist[v]++;
+  }
+  const maxH = Math.max(...hist);
+  const W = 160, H = 56;
+  histCtx.clearRect(0, 0, W, H);
+  histCtx.fillStyle = 'rgba(0,0,0,.4)';
+  histCtx.fillRect(0, 0, W, H);
+
+  const grad = histCtx.createLinearGradient(0, H, 0, 0);
+  grad.addColorStop(0, 'rgba(59,130,246,.2)');
+  grad.addColorStop(1, 'rgba(59,130,246,.8)');
+  histCtx.fillStyle = grad;
+  for (let i = 0; i < bins; i++) {
+    const x = i / bins * W;
+    const h = (hist[i] / maxH) * H;
+    histCtx.fillRect(x, H - h, W / bins + 1, h);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Report panel
+// ─────────────────────────────────────────────
+function toggleReport() {
+  const panel = document.getElementById('sidePanel');
+  panel.classList.toggle('collapsed');
+  setTimeout(resetView, 280);
+}
+
+// ─────────────────────────────────────────────
+// Loading
+// ─────────────────────────────────────────────
+function showLoading(v, msg) {
+  const el = document.getElementById('loadingMsg');
+  el.classList.toggle('hidden', !v);
+  if (msg) document.getElementById('loadingText').textContent = msg;
+}
+
+// ─────────────────────────────────────────────
+// Resize observer
+// ─────────────────────────────────────────────
+new ResizeObserver(() => { if (currentIdx >= 0) resetView(); })
+  .observe(document.getElementById('canvasWrap'));
+
+// ─────────────────────────────────────────────
+// Keyboard shortcuts
+// ─────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+  if (currentIdx < 0) return;
+  switch(e.key) {
+    case 'ArrowRight': case 'ArrowDown':
+      showImage(Math.min(currentIdx + 1, files.length - 1)); break;
+    case 'ArrowLeft': case 'ArrowUp':
+      showImage(Math.max(currentIdx - 1, 0)); break;
+    case 'r': rotate90(); break;
+    case 'f': resetView(); break;
+    case 'i': invertLUT(); break;
+    case 'h': flipH(); break;
+    case '1': document.getElementById('toolWL').click(); break;
+    case '2': document.getElementById('toolZoom').click(); break;
+    case '3': document.getElementById('toolPan').click(); break;
+    case '+': case '=': zoom *= 1.2; render(); break;
+    case '-': zoom /= 1.2; render(); break;
+  }
+});
+
+// ─────────────────────────────────────────────
+// Export PNG
+// ─────────────────────────────────────────────
+function exportPNG() {
+  if (currentIdx < 0) { alert('No image loaded.'); return; }
+  const f = files[currentIdx];
+  const { pixels16, rows, cols, photometric } = f;
+
+  const expCanvas = document.createElement('canvas');
+  const rotated = (rotation % 180) !== 0;
+  const w = rotated ? rows : cols;
+  const h = rotated ? cols : rows;
+  expCanvas.width = w;
+  expCanvas.height = h;
+  const ectx = expCanvas.getContext('2d');
+
+  const srcCanvas = new OffscreenCanvas(cols, rows);
+  const srcCtx = srcCanvas.getContext('2d');
+  const imgData = srcCtx.createImageData(cols, rows);
+  applyWindowLevel(pixels16, imgData.data, wCenter, wWidth, photometric, invertFlag);
+  srcCtx.putImageData(imgData, 0, 0);
+
+  ectx.translate(w / 2, h / 2);
+  ectx.rotate(rotation * Math.PI / 180);
+  if (flipped) ectx.scale(-1, 1);
+  ectx.drawImage(srcCanvas, -cols / 2, -rows / 2);
+
+  const link = document.createElement('a');
+  link.download = (f.name || 'dicom_export') + '.png';
+  link.href = expCanvas.toDataURL('image/png');
+  link.click();
+}
+
+// ─────────────────────────────────────────────
+// Export PDF
+// ─────────────────────────────────────────────
+function exportPDF() {
+  if (!files.length) { alert('No images loaded.'); return; }
+
+  const pages = [];
+  for (const f of files) {
+    const { pixels16, rows, cols, photometric, wc, ww } = f;
+    const c = new OffscreenCanvas(cols, rows);
+    const cCtx = c.getContext('2d');
+    const imgData = cCtx.createImageData(cols, rows);
+    applyWindowLevel(pixels16, imgData.data, wc, ww, photometric, false);
+    cCtx.putImageData(imgData, 0, 0);
+
+    const tmp = document.createElement('canvas');
+    tmp.width = cols; tmp.height = rows;
+    tmp.getContext('2d').drawImage(c, 0, 0);
+
+    pages.push({
+      jpegB64: tmp.toDataURL('image/jpeg', 0.92).split(',')[1],
+      w: cols, h: rows,
+      name: f.name,
+      patient: getString(f.dicom, TAG.PatientName).replace(/\^/g, ' '),
+      modality: getString(f.dicom, TAG.Modality),
+      date: getString(f.dicom, TAG.StudyDate),
+      body: getString(f.dicom, TAG.BodyPart),
+    });
+  }
+
+  const report = document.getElementById('reportBox').textContent;
+  const hasReport = report && report !== 'No report loaded.';
+  buildPDF(pages, hasReport ? report : null);
+}
+
+function buildPDF(pages, reportText) {
+  const objects = [];
+  let objN = 0;
+  function addObj(content) { objN++; objects.push(content); return objN; }
+
+  addObj(null);
+  addObj(null);
+
+  const pageRefs = [];
+  const imgRefs = [];
+
+  for (let i = 0; i < pages.length; i++) {
+    const p = pages[i];
+    const jpegBytes = base64ToUint8(p.jpegB64);
+
+    const imgId = addObj({
+      type: 'stream',
+      dict: `/Type /XObject\n/Subtype /Image\n/Width ${p.w}\n/Height ${p.h}\n/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Filter /DCTDecode\n/Length ${jpegBytes.length}`,
+      data: jpegBytes
+    });
+    imgRefs.push(imgId);
+
+    const pw = 595.28, ph = 841.89;
+    const margin = 40;
+    const headerH = 60;
+    const availW = pw - margin * 2;
+    const availH = ph - margin * 2 - headerH;
+    const scale = Math.min(availW / p.w, availH / p.h);
+    const sw = p.w * scale, sh = p.h * scale;
+    const x = margin + (availW - sw) / 2;
+    const y = margin + (availH - sh) / 2;
+
+    const dateStr = p.date ? `${p.date.slice(0,4)}-${p.date.slice(4,6)}-${p.date.slice(6,8)}` : '';
+    const headerLine = `${p.patient || 'Unknown'}  |  ${p.modality || ''}  |  ${p.body || ''}  |  ${dateStr}  |  ${p.name}`;
+    const safeHeader = pdfEscapeString(headerLine);
+
+    const contentStr =
+      `BT /F1 10 Tf ${margin} ${ph - margin - 14} Td (${safeHeader}) Tj ET\n` +
+      `0.3 0.3 0.3 rg ${margin} ${ph - margin - 18} ${pw - margin*2} 0.5 re f\n` +
+      `q ${sw} 0 0 ${sh} ${x} ${y} cm /Img${i} Do Q`;
+    const contentBytes = new TextEncoder().encode(contentStr);
+
+    const contentId = addObj({
+      type: 'stream',
+      dict: `/Length ${contentBytes.length}`,
+      data: contentBytes
+    });
+
+    const resStr = `/ProcSet [/PDF /Text /ImageC]\n/Font << /F1 FONTREF >>\n/XObject << /Img${i} ${imgId} 0 R >>`;
+
+    const pageId = addObj({
+      type: 'dict',
+      content: `/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 ${pw} ${ph}]\n/Resources << ${resStr} >>\n/Contents ${contentId} 0 R`
+    });
+    pageRefs.push(pageId);
+  }
+
+  if (reportText) {
+    const pw = 595.28, ph = 841.89;
+    const margin = 50;
+    const lineH = 14;
+    const maxLines = Math.floor((ph - margin * 2 - 30) / lineH);
+    const wrappedLines = wordWrap(reportText, 90);
+
+    for (let start = 0; start < wrappedLines.length; start += maxLines) {
+      const chunk = wrappedLines.slice(start, start + maxLines);
+      let contentStr = `BT /F1 12 Tf ${margin} ${ph - margin - 16} Td (Radiology Report) Tj ET\n`;
+      contentStr += `0.3 0.3 0.3 rg ${margin} ${ph - margin - 20} ${pw - margin*2} 0.5 re f\n`;
+      contentStr += `BT /F1 9 Tf ${margin} ${ph - margin - 38} Td ${lineH} TL\n`;
+      for (const line of chunk) {
+        contentStr += `(${pdfEscapeString(line)}) '\n`;
+      }
+      contentStr += `ET`;
+
+      const contentBytes = new TextEncoder().encode(contentStr);
+      const contentId = addObj({
+        type: 'stream',
+        dict: `/Length ${contentBytes.length}`,
+        data: contentBytes
+      });
+
+      const pageId = addObj({
+        type: 'dict',
+        content: `/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 ${pw} ${ph}]\n/Resources << /ProcSet [/PDF /Text] /Font << /F1 FONTREF >> >>\n/Contents ${contentId} 0 R`
+      });
+      pageRefs.push(pageId);
+    }
+  }
+
+  const fontId = addObj({
+    type: 'dict',
+    content: `/Type /Font\n/Subtype /Type1\n/BaseFont /Helvetica`
+  });
+
+  objects[0] = { type: 'dict', content: `/Type /Catalog\n/Pages 2 0 R` };
+  objects[1] = { type: 'dict', content: `/Type /Pages\n/Kids [${pageRefs.map(r => r + ' 0 R').join(' ')}]\n/Count ${pageRefs.length}` };
+
+  for (let i = 0; i < objects.length; i++) {
+    const obj = objects[i];
+    if (obj && obj.content) obj.content = obj.content.replace(/FONTREF/g, fontId + ' 0 R');
+  }
+
+  const parts = [];
+  const offsets = [];
+
+  parts.push('%PDF-1.4\n%\xFF\xFF\xFF\xFF\n');
+
+  for (let i = 0; i < objects.length; i++) {
+    offsets.push(byteLength(parts));
+    const obj = objects[i];
+    const n = i + 1;
+
+    if (obj.type === 'stream') {
+      parts.push(`${n} 0 obj\n<< ${obj.dict} >>\nstream\n`);
+      parts.push(obj.data);
+      parts.push('\nendstream\nendobj\n');
+    } else {
+      parts.push(`${n} 0 obj\n<< ${obj.content} >>\nendobj\n`);
+    }
+  }
+
+  const xrefOffset = byteLength(parts);
+  const count = objects.length + 1;
+  parts.push(`xref\n0 ${count}\n0000000000 65535 f \n`);
+  for (let i = 0; i < offsets.length; i++) {
+    parts.push(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
+  }
+  parts.push(`trailer\n<< /Size ${count} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`);
+
+  const blob = partsToBlob(parts);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = 'dicom_export.pdf';
+  link.href = url;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function base64ToUint8(b64) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+function pdfEscapeString(str) {
+  return str.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
+function wordWrap(text, maxChars) {
+  const lines = [];
+  for (const rawLine of text.split('\n')) {
+    if (rawLine.length <= maxChars) { lines.push(rawLine); continue; }
+    const words = rawLine.split(' ');
+    let cur = '';
+    for (const w of words) {
+      if ((cur + ' ' + w).length > maxChars && cur) { lines.push(cur); cur = w; }
+      else cur = cur ? cur + ' ' + w : w;
+    }
+    if (cur) lines.push(cur);
+  }
+  return lines;
+}
+
+function byteLength(parts) {
+  let len = 0;
+  for (const p of parts) {
+    if (typeof p === 'string') len += new TextEncoder().encode(p).length;
+    else len += p.length;
+  }
+  return len;
+}
+
+function partsToBlob(parts) {
+  const converted = parts.map(p => typeof p === 'string' ? new TextEncoder().encode(p) : p);
+  return new Blob(converted, { type: 'application/pdf' });
+}
+</script>
+</body>
+</html>
