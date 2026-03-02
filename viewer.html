@@ -361,11 +361,18 @@
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
-  .pdf-frame-wrapper iframe {
-    border: none;
-    display: block;
+  .pdf-scale-container {
+    position: relative;
     width: 100%;
-    height: 100%;
+    height: 420px;
+  }
+  .pdf-scale-container iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 420px;
+    border: none;
+    transform-origin: top left;
   }
 
   /* Drop overlay */
@@ -1207,14 +1214,18 @@ function loadReportPDFs(pdfFiles) {
       </div>`;
     box.appendChild(toolbar);
 
-    // ── Scrollable wrapper + iframe ──
+    // ── Scrollable wrapper → scale container → iframe ──
     const wrapper = document.createElement('div');
     wrapper.className = 'pdf-frame-wrapper';
 
+    const container = document.createElement('div');
+    container.className = 'pdf-scale-container';
+
     const iframe = document.createElement('iframe');
-    iframe.src = url;
+    iframe.src = url + '#toolbar=0&navpanes=0';  // hide PDF viewer's own chrome
     iframe.dataset.zoom = '100';
-    wrapper.appendChild(iframe);
+    container.appendChild(iframe);
+    wrapper.appendChild(container);
     box.appendChild(wrapper);
   });
 
@@ -1229,16 +1240,32 @@ function loadReportPDFs(pdfFiles) {
 function pdfZoom(btn, delta) {
   const toolbar = btn.closest('.pdf-toolbar');
   const wrapper = toolbar.nextElementSibling; // .pdf-frame-wrapper
-  const iframe = wrapper.querySelector('iframe');
+  const container = wrapper.querySelector('.pdf-scale-container');
+  const iframe = container.querySelector('iframe');
   const label = toolbar.querySelector('.pdf-zoom-label');
+
   let zoom = parseInt(iframe.dataset.zoom || '100') + delta;
   zoom = Math.max(25, Math.min(400, zoom));
   iframe.dataset.zoom = zoom;
   const scale = zoom / 100;
-  // Resize the iframe itself — PDF viewer's fit-to-width scales content to match,
-  // no reload needed. Wrapper overflow:auto handles scroll when content overflows.
-  iframe.style.width = zoom + '%';
-  iframe.style.height = Math.round(420 * scale) + 'px';
+
+  // Capture natural iframe size once (before any transform is applied)
+  if (!container.dataset.naturalW) {
+    container.dataset.naturalW = wrapper.clientWidth;
+  }
+  const naturalW = parseInt(container.dataset.naturalW);
+  const naturalH = 420;
+
+  // Size the container to the SCALED dimensions so the wrapper gets proper scrollbars
+  container.style.width  = Math.round(naturalW * scale) + 'px';
+  container.style.height = Math.round(naturalH * scale) + 'px';
+
+  // Keep the iframe at its natural pixel size and scale it visually —
+  // the PDF renders at full quality for naturalW × naturalH, we just magnify the pixels
+  iframe.style.width  = naturalW + 'px';
+  iframe.style.height = naturalH + 'px';
+  iframe.style.transform = `scale(${scale})`;
+
   label.textContent = zoom + '%';
 }
 
