@@ -1212,9 +1212,8 @@ function loadReportPDFs(pdfFiles) {
     wrapper.className = 'pdf-frame-wrapper';
 
     const iframe = document.createElement('iframe');
-    iframe.dataset.baseUrl = url;
+    iframe.src = url;
     iframe.dataset.zoom = '100';
-    iframe.src = url + '#zoom=100';
     wrapper.appendChild(iframe);
     box.appendChild(wrapper);
   });
@@ -1235,8 +1234,11 @@ function pdfZoom(btn, delta) {
   let zoom = parseInt(iframe.dataset.zoom || '100') + delta;
   zoom = Math.max(25, Math.min(400, zoom));
   iframe.dataset.zoom = zoom;
-  // Use #zoom= hash — browser PDF viewer zooms only the content, not its own UI
-  iframe.src = iframe.dataset.baseUrl + '#zoom=' + zoom;
+  const scale = zoom / 100;
+  // Resize the iframe itself — PDF viewer's fit-to-width scales content to match,
+  // no reload needed. Wrapper overflow:auto handles scroll when content overflows.
+  iframe.style.width = zoom + '%';
+  iframe.style.height = Math.round(420 * scale) + 'px';
   label.textContent = zoom + '%';
 }
 
