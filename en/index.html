@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>leggiraggi.it — View your X-rays in total privacy</title>
+<meta name="description" content="Open DICOM files from your hospital CD directly in the browser. No upload, no server. Your medical data stays on your device. Free and open-source.">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<!-- SEO -->
+<link rel="canonical" href="https://www.leggiraggi.it/en/">
+<meta name="robots" content="index, follow">
+<meta name="author" content="leggiraggi.it">
+<meta name="keywords" content="DICOM viewer, X-ray viewer, medical imaging, DICOM reader, radiology viewer, free DICOM viewer, online DICOM viewer, privacy, open source, CT scan viewer, MRI viewer">
+<meta name="theme-color" content="#09090b">
+
+<!-- hreflang -->
+<link rel="alternate" hreflang="it" href="https://www.leggiraggi.it/">
+<link rel="alternate" hreflang="en" href="https://www.leggiraggi.it/en/">
+<link rel="alternate" hreflang="x-default" href="https://www.leggiraggi.it/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.leggiraggi.it/en/">
+<meta property="og:title" content="leggiraggi.it — View your X-rays in total privacy">
+<meta property="og:description" content="Open DICOM files from your hospital CD directly in the browser. No upload, no server. 100% local, free and open-source.">
+<meta property="og:image" content="https://www.leggiraggi.it/og-image.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="it_IT">
+<meta property="og:site_name" content="leggiraggi.it">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="leggiraggi.it — View your X-rays in total privacy">
+<meta name="twitter:description" content="Open DICOM files from your hospital CD directly in the browser. 100% local, free and open-source.">
+<meta name="twitter:image" content="https://www.leggiraggi.it/og-image.png">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "leggiraggi.it",
+  "url": "https://www.leggiraggi.it",
+  "description": "Free, open-source DICOM viewer to read X-rays, CT scans and MRIs from your hospital CD directly in the browser, with total privacy.",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "featureList": "DICOM Viewer, Zoom, Window/Level, Measurements, PNG/PDF Export, Drag & Drop",
+  "screenshot": "https://www.leggiraggi.it/og-image.png",
+  "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.leggiraggi.it/en/#how-it-works"
+  },
+  "isAccessibleForFree": true,
+  "inLanguage": "en"
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090b;
+    --surface: #18181b;
+    --surface2: #27272a;
+    --border: #3f3f46;
+    --border-subtle: #27272a;
+    --text: #fafafa;
+    --text-muted: #a1a1aa;
+    --text-dim: #71717a;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --accent-glow: rgba(59,130,246,.18);
+    --green: #22c55e;
+    --cyan: #06b6d4;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 0 24px;
+    transition: background .3s, backdrop-filter .3s;
+  }
+  nav.scrolled {
+    background: rgba(9,9,11,.82);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .nav-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .brand-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-icon svg { width: 20px; height: 20px; }
+  .brand-name {
+    font-size: 18px; font-weight: 700; letter-spacing: -.03em;
+    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .nav-links { display: flex; align-items: center; gap: 8px; }
+  .nav-links a {
+    color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500;
+    padding: 8px 14px; border-radius: 8px;
+    transition: color var(--transition), background var(--transition);
+  }
+  .nav-links a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+  .nav-cta {
+    background: var(--accent) !important; color: #fff !important; font-weight: 600 !important;
+    padding: 8px 20px !important; border-radius: 8px !important;
+    transition: background var(--transition), box-shadow var(--transition) !important;
+  }
+  .nav-cta:hover { background: var(--accent-hover) !important; box-shadow: 0 0 24px var(--accent-glow) !important; }
+  .lang-switch {
+    color: var(--text-muted) !important; font-size: 13px !important;
+    padding: 6px 10px !important; border-radius: 6px !important;
+    border: 1px solid var(--border-subtle) !important;
+  }
+  .lang-switch:hover { color: var(--text) !important; border-color: var(--border) !important; }
+
+  /* HERO */
+  .hero {
+    position: relative; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 120px 24px 80px; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 600px;
+    background: radial-gradient(ellipse, rgba(59,130,246,.12) 0%, rgba(167,139,250,.06) 40%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .hero::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 720px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.2);
+    color: var(--green); font-size: 13px; font-weight: 600;
+    padding: 6px 16px; border-radius: 100px; margin-bottom: 32px;
+    animation: fadeInUp .6s ease both;
+  }
+  .badge svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  h1 {
+    font-size: clamp(40px, 6vw, 64px); font-weight: 800; letter-spacing: -.04em;
+    line-height: 1.08; margin-bottom: 24px; animation: fadeInUp .6s ease .1s both;
+  }
+  h1 .gradient {
+    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #c084fc 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-sub {
+    font-size: clamp(17px, 2.2vw, 20px); color: var(--text-muted); line-height: 1.6;
+    max-width: 540px; margin: 0 auto 40px; font-weight: 400;
+    animation: fadeInUp .6s ease .2s both;
+  }
+  .hero-actions {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; flex-wrap: wrap; animation: fadeInUp .6s ease .3s both;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; font-family: inherit;
+    font-size: 15px; font-weight: 600; padding: 14px 28px; border-radius: 12px;
+    border: none; cursor: pointer; text-decoration: none; transition: all var(--transition);
+  }
+  .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 0 0 0 var(--accent-glow), 0 4px 16px rgba(0,0,0,.3);
+  }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 32px var(--accent-glow), 0 4px 20px rgba(0,0,0,.4); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface2); border-color: var(--text-dim); transform: translateY(-1px); }
+
+  /* PREVIEW */
+  .preview-section { position: relative; z-index: 1; padding: 0 24px 100px; animation: fadeInUp .8s ease .45s both; }
+  .preview-wrapper {
+    max-width: 1060px; margin: 0 auto; border-radius: var(--radius-lg);
+    border: 1px solid var(--border); overflow: hidden; background: var(--surface);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.03), 0 20px 60px rgba(0,0,0,.5), 0 0 80px rgba(59,130,246,.06);
+  }
+  .preview-bar {
+    display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+    background: rgba(24,24,27,.9); border-bottom: 1px solid var(--border-subtle);
+  }
+  .preview-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--surface2); }
+  .preview-dot:nth-child(1) { background: #ef4444; }
+  .preview-dot:nth-child(2) { background: #eab308; }
+  .preview-dot:nth-child(3) { background: #22c55e; }
+  .preview-img { width: 100%; aspect-ratio: 16/9; background: var(--bg); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .mock-viewer { width: 100%; height: 100%; display: grid; grid-template-columns: 200px 1fr 260px; }
+  .mock-sidebar { background: var(--surface); border-right: 1px solid var(--border-subtle); padding: 16px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .mock-thumb { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 8px; border: 2px solid transparent; position: relative; overflow: hidden; }
+  .mock-thumb.active { border-color: var(--accent); }
+  .mock-thumb::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 45% 50%, rgba(200,200,200,.15) 0%, rgba(100,100,100,.05) 50%, transparent 70%); }
+  .mock-center { background: var(--bg); display: flex; align-items: center; justify-content: center; position: relative; }
+  .mock-xray { width: 70%; height: 80%; background: radial-gradient(ellipse at 50% 45%, rgba(180,180,200,.12) 0%, rgba(120,120,150,.06) 35%, rgba(60,60,80,.03) 60%, transparent 80%); border-radius: 12px; position: relative; }
+  .mock-hud { position: absolute; top: 12px; left: 12px; font-size: 11px; color: var(--accent); font-family: 'Inter', monospace; opacity: .7; line-height: 1.6; }
+  .mock-panel { background: var(--surface); border-left: 1px solid var(--border-subtle); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .mock-field-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .mock-field-value { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .mock-divider { height: 1px; background: var(--border-subtle); }
+  @media (max-width: 768px) { .mock-viewer { grid-template-columns: 1fr; } .mock-sidebar, .mock-panel { display: none; } }
+
+  /* FEATURES */
+  .features { padding: 80px 24px 100px; position: relative; z-index: 1; }
+  .features-inner { max-width: 1060px; margin: 0 auto; }
+  .section-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); text-align: center; margin-bottom: 12px; }
+  .section-title { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -.03em; text-align: center; margin-bottom: 16px; }
+  .section-desc { font-size: 17px; color: var(--text-muted); text-align: center; max-width: 520px; margin: 0 auto 60px; line-height: 1.6; }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 768px) { .features-grid { grid-template-columns: 1fr; } }
+  .feature-card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 28px 24px; transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition); }
+  .feature-card:hover { border-color: var(--border); box-shadow: 0 8px 30px rgba(0,0,0,.25); transform: translateY(-2px); }
+  .feature-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+  .feature-icon svg { width: 22px; height: 22px; }
+  .feature-icon.blue { background: rgba(59,130,246,.1); color: var(--accent); }
+  .feature-icon.green { background: rgba(34,197,94,.1); color: var(--green); }
+  .feature-icon.cyan { background: rgba(6,182,212,.1); color: var(--cyan); }
+  .feature-icon.purple { background: rgba(168,85,247,.1); color: #a855f7; }
+  .feature-icon.yellow { background: rgba(234,179,8,.1); color: #eab308; }
+  .feature-icon.rose { background: rgba(244,63,94,.1); color: #f43f5e; }
+  .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; letter-spacing: -.01em; }
+  .feature-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+  /* PRIVACY */
+  .privacy { padding: 80px 24px 100px; position: relative; z-index: 1; }
+  .privacy-inner {
+    max-width: 800px; margin: 0 auto;
+    background: linear-gradient(135deg, rgba(34,197,94,.04) 0%, rgba(6,182,212,.04) 100%);
+    border: 1px solid rgba(34,197,94,.15); border-radius: var(--radius-lg);
+    padding: 60px 48px; text-align: center; position: relative; overflow: hidden;
+  }
+  .privacy-inner::before { content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(34,197,94,.06) 0%, transparent 70%); pointer-events: none; }
+  .privacy-icon { width: 64px; height: 64px; border-radius: 16px; background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; position: relative; }
+  .privacy-icon svg { width: 30px; height: 30px; color: var(--green); }
+  .privacy h2 { font-size: clamp(26px, 3.5vw, 36px); font-weight: 700; letter-spacing: -.03em; margin-bottom: 16px; position: relative; }
+  .privacy .desc { font-size: 17px; color: var(--text-muted); line-height: 1.7; max-width: 560px; margin: 0 auto 36px; position: relative; }
+  .privacy-points { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; position: relative; }
+  .privacy-point { display: flex; align-items: center; gap: 8px; background: rgba(34,197,94,.06); border: 1px solid rgba(34,197,94,.12); padding: 10px 20px; border-radius: 100px; font-size: 14px; font-weight: 500; color: var(--text); }
+  .privacy-point svg { width: 16px; height: 16px; color: var(--green); flex-shrink: 0; }
+
+  /* HOW */
+  .how { padding: 80px 24px 100px; position: relative; z-index: 1; }
+  .how-inner { max-width: 1060px; margin: 0 auto; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 60px; }
+  @media (max-width: 768px) { .steps { grid-template-columns: 1fr; } }
+  .step { text-align: center; }
+  .step-num { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 18px; font-weight: 700; color: var(--accent); }
+  .step h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+  .step p { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 280px; margin: 0 auto; }
+
+  /* CTA */
+  .cta { padding: 60px 24px 100px; text-align: center; position: relative; z-index: 1; }
+  .cta h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -.03em; margin-bottom: 16px; }
+  .cta p { font-size: 17px; color: var(--text-muted); margin-bottom: 32px; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border-subtle); padding: 32px 24px; text-align: center; position: relative; z-index: 1; }
+  footer p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+  footer a { color: var(--text-muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 640px) {
+    .nav-links a:not(.nav-cta):not(.lang-switch) { display: none; }
+    .hero { padding: 100px 20px 60px; }
+    .privacy-inner { padding: 40px 24px; }
+    .hero-actions { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="/en/" class="brand" aria-label="leggiraggi.it — Back to top">
+      <div class="brand-icon" role="img" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+          <path d="M2 12h20"/>
+        </svg>
+      </div>
+      <span class="brand-name">leggiraggi.it</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="/" class="lang-switch" aria-label="Switch to Italian">🇮🇹 IT</a>
+      <a href="../viewer.html" class="nav-cta" aria-label="Open the DICOM viewer">Open Viewer</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="badge">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      100% local — your data never leaves your device
+    </div>
+
+    <h1>Read your <span class="gradient">X-rays</span> the easy way</h1>
+
+    <p class="hero-sub">
+      Open DICOM files from your hospital CD directly in the browser. No installation, no account, no data sent to any server.
+    </p>
+
+    <div class="hero-actions">
+      <a href="../viewer.html" class="btn btn-primary" aria-label="Open the DICOM viewer">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Open Viewer
+      </a>
+      <a href="#how-it-works" class="btn btn-secondary" aria-label="Learn how it works">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        How it works
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- APP PREVIEW -->
+<div class="preview-section">
+  <div class="preview-wrapper" role="img" aria-label="Preview of the DICOM viewer with patient panel, thumbnails and X-ray image">
+    <div class="preview-bar">
+      <div class="preview-dot"></div>
+      <div class="preview-dot"></div>
+      <div class="preview-dot"></div>
+    </div>
+    <div class="preview-img">
+      <div class="mock-viewer">
+        <div class="mock-sidebar">
+          <div class="mock-thumb active"></div>
+          <div class="mock-thumb"></div>
+          <div class="mock-thumb"></div>
+        </div>
+        <div class="mock-center">
+          <div class="mock-xray"></div>
+          <div class="mock-hud">
+            WC 40 &nbsp;WW 400<br>
+            Zoom 100%<br>
+            512 &times; 512
+          </div>
+        </div>
+        <div class="mock-panel">
+          <div>
+            <div class="mock-field-label">Patient</div>
+            <div class="mock-field-value">Mario Rossi</div>
+          </div>
+          <div class="mock-divider"></div>
+          <div>
+            <div class="mock-field-label">Modality</div>
+            <div class="mock-field-value">CR</div>
+          </div>
+          <div>
+            <div class="mock-field-label">Body Part</div>
+            <div class="mock-field-value">CHEST</div>
+          </div>
+          <div class="mock-divider"></div>
+          <div>
+            <div class="mock-field-label">Exam Date</div>
+            <div class="mock-field-value">2025-01-15</div>
+          </div>
+          <div>
+            <div class="mock-field-label">Size</div>
+            <div class="mock-field-value">2048 &times; 2048</div>
+          </div>
+          <div class="mock-divider"></div>
+          <div>
+            <div class="mock-field-label">Bit Depth</div>
+            <div class="mock-field-value">12-bit</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="features-inner">
+    <div class="section-label reveal">Features</div>
+    <h2 class="section-title reveal">Everything you need to read your scans</h2>
+    <p class="section-desc reveal">
+      A complete tool to view and analyze DICOM images from your X-rays, CT scans and MRIs.
+    </p>
+    <div class="features-grid">
+
+      <div class="feature-card reveal">
+        <div class="feature-icon blue" role="img" aria-label="Zoom icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
+        </div>
+        <h3>Zoom &amp; Navigation</h3>
+        <p>Zoom in, zoom out, and navigate images with precision. Browse through multiple scans using the thumbnail sidebar.</p>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon purple" role="img" aria-label="Brightness icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4"/><path d="M12 19v4"/><path d="m4.2 4.2 2.8 2.8"/><path d="m17 17 2.8 2.8"/><path d="M1 12h4"/><path d="M19 12h4"/><path d="m4.2 19.8 2.8-2.8"/><path d="m17 7 2.8-2.8"/></svg>
+        </div>
+        <h3>Brightness &amp; Contrast</h3>
+        <p>Adjust Window/Level to highlight different tissues. Automatic presets for chest, bone, abdomen, brain and more.</p>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon green" role="img" aria-label="Measurements icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7 8.7 21.3c-1 1-2.5 1-3.4 0l-2.6-2.6c-1-1-1-2.5 0-3.4L15.3 2.7c1-1 2.5-1 3.4 0l2.6 2.6c1 1 1 2.5 0 3.4Z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/></svg>
+        </div>
+        <h3>Measurements</h3>
+        <p>Ruler for distances, protractor for angles and ROI for area statistics. Measure directly on the images.</p>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon cyan" role="img" aria-label="Reports icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        </div>
+        <h3>Reports Included</h3>
+        <p>If the CD contains text reports, they are displayed automatically alongside the corresponding images.</p>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon yellow" role="img" aria-label="Export icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        </div>
+        <h3>Export PNG &amp; PDF</h3>
+        <p>Save images as high-quality PNG or export a complete PDF with all scans and patient data.</p>
+      </div>
+
+      <div class="feature-card reveal">
+        <div class="feature-icon rose" role="img" aria-label="Drag and drop icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8l4-2"/><circle cx="12" cy="14" r="8"/></svg>
+        </div>
+        <h3>Drag &amp; Drop</h3>
+        <p>Drag your DICOM files or folder directly into the window. Also supports file manager selection.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section class="privacy" id="privacy">
+  <div class="privacy-inner reveal">
+    <div class="privacy-icon" role="img" aria-label="Privacy and security icon">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+    </div>
+    <h2>Your data stays yours. Always.</h2>
+    <p class="desc">
+      leggiraggi.it is an <strong>open-source</strong> project: the code is public and verifiable by anyone. It runs entirely in your browser. Your medical images are never uploaded to any server. We collect no data, use no cookies, track nothing.
+    </p>
+    <div class="privacy-points">
+      <div class="privacy-point">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        No file upload
+      </div>
+      <div class="privacy-point">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        No remote server
+      </div>
+      <div class="privacy-point">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        No cookies or tracking
+      </div>
+      <div class="privacy-point">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        No account required
+      </div>
+      <div class="privacy-point">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Works offline
+      </div>
+      <div class="privacy-point">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Open-source &amp; verifiable
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how-it-works">
+  <div class="how-inner">
+    <div class="section-label reveal">How it works</div>
+    <h2 class="section-title reveal">Three simple steps</h2>
+    <p class="section-desc reveal">No installation needed. Just a modern browser.</p>
+
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <h3>Insert the CD</h3>
+        <p>Insert the X-ray CD you received from the hospital into your computer.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">2</div>
+        <h3>Open the Viewer</h3>
+        <p>Click "Open Viewer" and drag your DICOM files into the window, or select them from the file manager.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">3</div>
+        <h3>View &amp; Explore</h3>
+        <p>Navigate through images, adjust brightness and contrast, take measurements and export to PDF.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2 class="reveal">Ready to view your scans?</h2>
+  <p class="reveal">Free, private, instant.</p>
+  <div class="reveal">
+    <a href="../viewer.html" class="btn btn-primary" aria-label="Open the DICOM viewer">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Open Viewer
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    <strong>leggiraggi.it</strong> &mdash; Free and open-source DICOM viewer.<br>
+    No data is collected or transmitted. Everything happens locally in your browser.<br>
+    <span style="margin-top:8px; display:inline-block;">
+      Built with care for patients. &mdash;
+      <a href="https://github.com/fedcnvs/dicom-reader" target="_blank" rel="noopener">Source code on GitHub</a>
+      &mdash; <a href="/">🇮🇹 Versione italiana</a>
+    </span>
+  </p>
+</footer>
+
+<script>
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 20);
+});
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

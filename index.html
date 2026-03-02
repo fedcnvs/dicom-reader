@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>leggiraggi.it — Visualizza le tue radiografie in totale privacy</title>
+<script>
+  // Language auto-redirect (runs before any render)
+  (function() {
+    var lang = navigator.language || navigator.userLanguage || '';
+    if (lang.startsWith('en') && !sessionStorage.getItem('lang-override')) {
+      window.location.replace('/en/');
+    }
+  })();
+</script>
 <meta name="description" content="Apri i file DICOM del CD dell'ospedale direttamente nel browser. Senza installare nulla, senza inviare dati. Visualizzatore DICOM 100% locale, gratuito e open-source.">
 
 <!-- Favicon -->
@@ -13,6 +22,9 @@
 
 <!-- SEO -->
 <link rel="canonical" href="https://www.leggiraggi.it/">
+<link rel="alternate" hreflang="it" href="https://www.leggiraggi.it/">
+<link rel="alternate" hreflang="en" href="https://www.leggiraggi.it/en/">
+<link rel="alternate" hreflang="x-default" href="https://www.leggiraggi.it/">
 <meta name="robots" content="index, follow">
 <meta name="author" content="leggiraggi.it">
 <meta name="keywords" content="DICOM viewer, radiografie online, visualizzatore radiografie, leggere radiografie CD, DICOM reader, raggi X, TAC, risonanza magnetica, visualizzatore DICOM gratuito, privacy, open source">
@@ -25,6 +37,7 @@
 <meta property="og:description" content="Apri i file DICOM del CD dell'ospedale direttamente nel browser. Senza installare nulla, senza inviare dati. 100% locale e open-source.">
 <meta property="og:image" content="https://www.leggiraggi.it/og-image.png">
 <meta property="og:locale" content="it_IT">
+<meta property="og:locale:alternate" content="en_US">
 <meta property="og:site_name" content="leggiraggi.it">
 
 <!-- Twitter Card -->
@@ -747,6 +760,7 @@
       <a href="#funzioni">Funzioni</a>
       <a href="#privacy">Privacy</a>
       <a href="#come-funziona">Come funziona</a>
+      <a href="/en/" aria-label="Switch to English version" onclick="sessionStorage.setItem('lang-override','en')">🇬🇧 EN</a>
       <a href="viewer.html" class="nav-cta" aria-label="Apri il visualizzatore DICOM">Apri Viewer</a>
     </div>
   </div>
