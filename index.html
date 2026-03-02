@@ -194,6 +194,12 @@
     background: var(--accent-hover) !important;
     box-shadow: 0 0 24px var(--accent-glow) !important;
   }
+  .lang-switch {
+    color: var(--text-muted) !important; font-size: 13px !important;
+    padding: 6px 10px !important; border-radius: 6px !important;
+    border: 1px solid var(--border-subtle) !important;
+  }
+  .lang-switch:hover { color: var(--text) !important; border-color: var(--border) !important; }
 
   /* ── HERO ── */
   .hero {
@@ -760,7 +766,7 @@
       <a href="#funzioni">Funzioni</a>
       <a href="#privacy">Privacy</a>
       <a href="#come-funziona">Come funziona</a>
-      <a href="/en/" aria-label="Switch to English version" onclick="sessionStorage.setItem('lang-override','en')">🇬🇧 EN</a>
+      <a href="/en/" class="lang-switch" aria-label="Switch to English version" onclick="sessionStorage.setItem('lang-override','en')">🇬🇧 EN</a>
       <a href="viewer.html" class="nav-cta" aria-label="Apri il visualizzatore DICOM">Apri Viewer</a>
     </div>
   </div>
